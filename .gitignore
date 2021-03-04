@@ -161,3 +161,7 @@ SFML-2.5.1/lib/cmake/SFML/SFMLConfigVersion.cmake
 SFML-2.5.1/lib/cmake/SFML/SFMLSharedTargets-debug.cmake
 SFML-2.5.1/license.md
 SFML-2.5.1/readme.md
+editor/.vs/editor/v16/Browse.VC.opendb
+*.rc
+*.ilk
+*.enc
