@@ -9,8 +9,6 @@ class DWTextDrawer
 		DWTextDrawer(HWND window);
 	   ~DWTextDrawer();
 
-	   //onscroll
-	   //onresize
 	   void OnResize(UINT width, UINT height);
 	   void OnScroll(FLOAT delta);
 
@@ -22,12 +20,14 @@ class DWTextDrawer
 
 		IDWriteFactory* DWriteFactory;
 		IDWriteTextFormat* DWriteTextFormat;
+		IDWriteTextLayout* DWriteTextLayout;
 
 		ID2D1Factory* Direct2DFactory;
 		ID2D1SolidColorBrush* Direct2DBrush;
 		ID2D1HwndRenderTarget* Direct2DTarget;
 
 		//TODO add all text's options
+		bool TextOptionsChanged;
 		FLOAT FontSize;
 
 		void CreateResources();

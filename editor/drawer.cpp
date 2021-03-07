@@ -17,7 +17,6 @@ DWTextDrawer::DWTextDrawer(HWND window)
 }
 DWTextDrawer::~DWTextDrawer()
 {
-	//rewrite
 	free(this);
 }
 void DWTextDrawer::DWDrawText(const wchar_t* text)
@@ -55,10 +54,12 @@ void DWTextDrawer::DWDrawText(const wchar_t* text)
 		static_cast<FLOAT>(this->SurfaceRect.right - this->SurfaceRect.left),
 		static_cast<FLOAT>(this->SurfaceRect.bottom - this->SurfaceRect.top)
 	);
-	if (SUCCEEDED(DWriteFactory))
+	
+	if (DWriteFactory)
 	{
+		//Direct write text format
 		DWriteFactory->CreateTextFormat(
-			L"Consolas",
+			L"Lucida",
 			NULL,
 			DWRITE_FONT_WEIGHT_NORMAL,
 			DWRITE_FONT_STYLE_ITALIC,
@@ -70,6 +71,7 @@ void DWTextDrawer::DWDrawText(const wchar_t* text)
 		DWriteTextFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
 		DWriteTextFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
 	}
+
 	Direct2DTarget->DrawTextW(
 		text,
 		wcslen(text),
@@ -78,7 +80,7 @@ void DWTextDrawer::DWDrawText(const wchar_t* text)
 		Direct2DBrush
 	);
 
-	Direct2DTarget->EndDraw();
+    Direct2DTarget->EndDraw();
 }
 void DWTextDrawer::CreateResources()
 {
@@ -94,22 +96,6 @@ void DWTextDrawer::CreateResources()
 		__uuidof(IDWriteFactory),
 		(IUnknown**)(&DWriteFactory)
 	);
-	//Direct write text format & few options
-	if (SUCCEEDED(DWriteFactory))
-	{
-		DWriteFactory->CreateTextFormat(
-			L"Consolas",
-			NULL,
-			DWRITE_FONT_WEIGHT_NORMAL,
-			DWRITE_FONT_STYLE_NORMAL,
-			DWRITE_FONT_STRETCH_NORMAL,
-			this->FontSize,
-			L"en-us",
-			&DWriteTextFormat
-		);
-		DWriteTextFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
-		DWriteTextFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
-	}
 }
 void DWTextDrawer::DiscardResources()
 {
@@ -130,6 +116,8 @@ void DWTextDrawer::OnResize(UINT width,UINT height)
 }
 void DWTextDrawer::OnScroll(FLOAT delta)
 {
+	//normalazing
+	delta = delta == 65416.0f ? -5.0f : 5.0f;
 	if (this->FontSize + delta < 100.0f && this->FontSize + delta > 10.0f)
 		this->FontSize += delta;
 }

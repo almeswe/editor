@@ -1,14 +1,9 @@
-﻿#include <windows.h>
-
+﻿#include "gap.h";
 #include "drawer.h"
-#include "gap.h";
-#include "wchmethods.h"
-
-PAINTSTRUCT ps;
+#include <windows.h>
 
 Gap* gap;
 DWTextDrawer* drawer;
-wchar_t* text = const_cast<wchar_t*>(L"");
 
 LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -17,43 +12,51 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
         case WM_CREATE:
             drawer = new DWTextDrawer(window);
             gap = new Gap();
-            //gap->Insert(9,L"wut??");
-            //gap->Insert(0,L"first");
-            //text = gap->Text;
+            break;
+
+        case WM_MOUSEWHEEL:
+            if (GetKeyState(VK_CONTROL) < 0)
+            {
+                drawer->OnScroll(HIWORD(wParam));
+                drawer->DWDrawText(gap->GetText());
+            }
             break;
 
         case WM_KEYDOWN:
             //rewrite
-            if (wParam == VK_BACK)
+            switch (wParam)
             {
-                text = remlst(text);
-                drawer->DWDrawText(text);
-            }
-            if (GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_ADD) < 0)
-            {
-                drawer->OnScroll(5.0f);
-                drawer->DWDrawText(text);
-            }
-            if (GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_SUBTRACT) < 0)
-            {
-                drawer->OnScroll(-5.0f);
-                drawer->DWDrawText(text);
+                case VK_BACK:
+                {
+                    gap->RemoveAt(gap->GetPoint());
+                    drawer->DWDrawText(gap->GetText());
+                    break;
+                }
+                case VK_LEFT:
+                    gap->MovePointBackward();
+                    break;
+                case VK_RIGHT:
+                    gap->MovePointForward();
+                    break;
             }
             break;
 
         case WM_CHAR:
-            text = append(text, wParam);
-            drawer->DWDrawText(text);
+            if (wParam == VK_BACK)
+                break;
+            gap->InsertAt(gap->GetPoint(),wParam);
+            drawer->DWDrawText(gap->GetText());
             break;
 
         case WM_SIZE:
             drawer->OnResize(LOWORD(lParam),HIWORD(lParam));
-            drawer->DWDrawText(text);
+            drawer->DWDrawText(gap->GetText());
             break;
 
         case WM_PAINT:
+            PAINTSTRUCT ps;
             BeginPaint(window,&ps);
-            drawer->DWDrawText(text);
+            drawer->DWDrawText(gap->GetText());
             EndPaint(window,&ps);
             break;
 
