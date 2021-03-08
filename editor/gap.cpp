@@ -3,7 +3,7 @@
 Gap::Gap()
 {
 	this->Point = 0;
-	this->GapSize = 5;
+	this->GapSize = 50;
 
 	this->GapL = 0;
 	this->GapR = 0;
@@ -27,10 +27,18 @@ void Gap::RemoveAt(size_t pos)
 		return;
 	if (this->GapL != pos)
 		this->MoveGap(pos);
-
-	this->Text[pos - 1] = GAP_CH;
-	this->GapL--;
-	this->Point--;
+	while (pos > 0)
+	{
+		this->GapL--;
+		this->Point--;
+		if (this->Text[pos - 1] != GAP_CH)
+		{
+			this->Text[pos-1] = GAP_CH;
+			break;
+		}
+		else 
+			pos--;
+	}
 }
 void Gap::InsertAt(size_t pos, wchar_t ch)
 {
