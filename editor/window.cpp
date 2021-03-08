@@ -4,6 +4,10 @@
 
 Gap* gap;
 DWTextDrawer* drawer;
+BOOL RepaintWindow(HWND window)
+{
+    return RedrawWindow(window, NULL, NULL, RDW_INTERNALPAINT | RDW_INVALIDATE);
+}
 
 LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -16,20 +20,21 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 
         case WM_MOUSEWHEEL:
             if (GetKeyState(VK_CONTROL) < 0)
-            {
                 drawer->OnScroll(HIWORD(wParam));
-                drawer->DWDrawText(gap->GetText());
-            }
             break;
 
         case WM_KEYDOWN:
             //rewrite
+            if (GetKeyState(VK_CONTROL) < 0 && GetKeyState(0x56) < 0)
+            {
+                gap->InsertAt(gap->GetPoint(), L"pasted");
+                break;
+            }
             switch (wParam)
             {
                 case VK_BACK:
                 {
                     gap->RemoveAt(gap->GetPoint());
-                    drawer->DWDrawText(gap->GetText());
                     break;
                 }
                 case VK_LEFT:
@@ -45,12 +50,10 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             if (wParam == VK_BACK)
                 break;
             gap->InsertAt(gap->GetPoint(),wParam);
-            drawer->DWDrawText(gap->GetText());
             break;
 
         case WM_SIZE:
             drawer->OnResize(LOWORD(lParam),HIWORD(lParam));
-            drawer->DWDrawText(gap->GetText());
             break;
 
         case WM_PAINT:
@@ -58,7 +61,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             BeginPaint(window,&ps);
             drawer->DWDrawText(gap->GetText());
             EndPaint(window,&ps);
-            break;
+            return 0;
 
         case WM_CLOSE:
             PostQuitMessage(0);
@@ -68,6 +71,8 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             return DefWindowProc(window, message, wParam, lParam);
     }
     return 0;
+    RepaintWindow(window);
+}
 }
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
@@ -95,6 +100,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
         instance,
         NULL
     );
+
     ShowWindow(window, SW_SHOW);
     while (GetMessage(&message, NULL, 0, 0) > 0)
     {
