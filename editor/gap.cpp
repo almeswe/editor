@@ -92,6 +92,36 @@ void Gap::MovePointBackward()
 	}
 }
 
+wchar_t* Gap::GetLine(size_t index)
+{
+	wchar_t* Line = new wchar_t[0];
+	Line[0] = L'\0';
+	size_t Index = 0;
+	for (int i = 0;i < wcslen(this->Text);i++)
+	{
+		switch (this->Text[i])
+		{
+			case GAP_CH:
+				continue;
+		}
+		if (this->Text[i] == '\r')
+		{
+			if (Index == index)
+				return Line;
+			else
+			{
+				Line = new wchar_t[0];
+				Line[0] = L'\0';
+				Index++;
+			}
+		}
+		else
+			Line = this->WCharAppend(Line,this->Text[i]);
+	}
+
+	return Line;
+}
+
 void Gap::MoveGap(size_t pos)
 {
 	if (this->GapL > pos)
@@ -160,4 +190,15 @@ void Gap::InsertInText(size_t pos, wchar_t ch)
 	if (pos >= wcslen(this->Text))
 		this->ExtendText();
 	this->Text[pos] = ch;
+}
+
+wchar_t* Gap::WCharAppend(wchar_t* wcharr, wchar_t ch)
+{
+	size_t len = wcslen(wcharr);
+	wchar_t* newarr = new wchar_t[len + 1];
+	wcscpy_s(newarr,len+1,wcharr);
+	newarr[len + 1] = '\0';
+	newarr[len] = ch;
+	return newarr;
+}
 }

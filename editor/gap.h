@@ -23,6 +23,8 @@ class Gap
 		void MovePointForward();
 		void MovePointBackward();
 
+		wchar_t* GetLine(size_t index);
+
 	private:
 		wchar_t* Text;
 		
@@ -38,4 +40,6 @@ class Gap
 		void ExtendText();
 
 		void InsertInText(size_t pos, wchar_t ch);
+
+		wchar_t* WCharAppend(wchar_t* wcharr, wchar_t ch);
 };
