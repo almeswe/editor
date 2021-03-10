@@ -1,9 +1,10 @@
 ﻿#include "gap.h";
-#include "drawer.h"
+#include "renderer.h"
 #include <windows.h>
 
 Gap* gap;
-DWTextDrawer* drawer;
+Renderer* renderer;
+
 BOOL RepaintWindow(HWND window)
 {
     return RedrawWindow(window, NULL, NULL, RDW_INTERNALPAINT | RDW_INVALIDATE);
@@ -14,13 +15,13 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
     switch (message)
     {
         case WM_CREATE:
-            drawer = new DWTextDrawer(window);
+            renderer = new Renderer(window);
             gap = new Gap();
             break;
 
         case WM_MOUSEWHEEL:
             if (GetKeyState(VK_CONTROL) < 0)
-                drawer->OnScroll(HIWORD(wParam));
+                renderer->OnScroll(HIWORD(wParam));
             break;
 
         case WM_KEYDOWN:
@@ -49,17 +50,19 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
         case WM_CHAR:
             if (wParam == VK_BACK)
                 break;
-            gap->InsertAt(gap->GetPoint(),wParam);
+            gap->InsertAt(gap->GetPoint(), wParam);
             break;
 
         case WM_SIZE:
-            drawer->OnResize(LOWORD(lParam),HIWORD(lParam));
+            renderer->OnResize(LOWORD(lParam),HIWORD(lParam));
             break;
 
         case WM_PAINT:
             PAINTSTRUCT ps;
             BeginPaint(window,&ps);
-            drawer->DWDrawText(gap->GetText());
+            renderer->SetText(gap->GetText());
+            renderer->RenderText();
+            renderer->RenderCursor(gap->GetPoint());
             EndPaint(window,&ps);
             return 0;
 
@@ -70,7 +73,6 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
         default:
             return DefWindowProc(window, message, wParam, lParam);
     }
-    return 0;
     RepaintWindow(window);
 }
 }
