@@ -1,11 +1,8 @@
 #include "renderer.h"
 
-using namespace D2D1;
-
 Renderer::Renderer(HWND window)
 {
-	this->FontSize = 25.0f;
-
+	this->FontSize = 35.0f;
 	this->Window = window;
 	this->CreateResources();
 }
@@ -21,7 +18,8 @@ void Renderer::RenderText()
 		this->CreateDirect2DTarget();
 		this->CreateDirect2DBrush();
 	}
-	this->CreateDirect2DContext();
+	if (!this->Direct2DContext)
+		this->CreateDirect2DContext();
 
 	this->CreateDWriteTextLayout();
 	this->RenderTextWithDirect2DContext();
@@ -50,7 +48,7 @@ void Renderer::CreateDirect2DTarget()
 			this->Window,
 			Direct2DSize
 		),
-		&(this->Direct2DTarget)
+		&this->Direct2DTarget
 	);
 }
 void Renderer::CreateDirect2DFactory()
@@ -81,7 +79,7 @@ void Renderer::RenderTextWithDirect2DContext()
 	this->Direct2DContext->Clear(ColorF(ColorF::DarkSlateGray));
 	this->Direct2DContext->DrawTextLayout(
 		{ 0,0 },
-		this->DWriteTextLayout,
+		this->DWriteTextLayout.Get(),
 		this->Direct2DBrush,
 		D2D1_DRAW_TEXT_OPTIONS_NONE
 	);
@@ -109,7 +107,7 @@ void Renderer::RenderTextWithDirect2DTarget()
 	this->Direct2DTarget->Clear(ColorF(ColorF::DarkSlateGray));
 	this->Direct2DTarget->DrawTextLayout(
 		{ 0,0 },
-		this->DWriteTextLayout,
+		this->DWriteTextLayout.Get(),
 		this->Direct2DBrush
 	);
 	this->Direct2DTarget->EndDraw();
@@ -130,10 +128,10 @@ void Renderer::CreateDWriteTextFormat()
 	if (this->DWriteFactory)
 	{
 		this->DWriteFactory->CreateTextFormat(
-			L"Lucida",
+			L"Consolas",
 			NULL,
 			DWRITE_FONT_WEIGHT_NORMAL,
-			DWRITE_FONT_STYLE_ITALIC,
+			DWRITE_FONT_STYLE_NORMAL,
 			DWRITE_FONT_STRETCH_NORMAL,
 			this->FontSize,
 			L"en-us",
@@ -161,8 +159,8 @@ void Renderer::CreateDWriteTextLayout()
 		this->Text,
 		wcslen(this->Text),
 		this->DWriteTextFormat,
-		this->SurfaceRect.right - this->SurfaceRect.left,
-		this->SurfaceRect.bottom - this->SurfaceRect.top,
+		0,
+		0,
 		&this->DWriteTextLayout
 	);
 	this->DWriteTextLayout->SetFontSize(this->FontSize, DWriteRange);
@@ -191,7 +189,7 @@ void Renderer::OnResize(UINT width,UINT height)
 		this->Direct2DTarget->Resize(size);
 	}
 }
-void Renderer::OnScroll(FLOAT delta)
+void Renderer::OnCtrlScroll(FLOAT delta)
 {
 	//normalazing
 	delta = delta == 65416.0f ? -5.0f : 5.0f;
