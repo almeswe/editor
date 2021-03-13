@@ -2,8 +2,8 @@
 
 Gap::Gap()
 {
-	this->Point = 0;
-	this->GapSize = 50;
+	this->GapSize = 150;
+	this->Cursor.Position = 0;
 
 	this->GapL = 0;
 	this->GapR = 0;
@@ -26,11 +26,11 @@ void Gap::RemoveAt(size_t pos)
 	if (pos < 1)
 		return;
 	if (this->GapL != pos)
-		this->MoveGap(pos);
+		this->MoveGapTo(pos);
 	while (pos > 0)
 	{
 		this->GapL--;
-		this->Point--;
+		this->MoveCursorBackward();
 		if (this->Text[pos - 1] != GAP_CH)
 		{
 			this->Text[pos-1] = GAP_CH;
@@ -43,93 +43,151 @@ void Gap::RemoveAt(size_t pos)
 void Gap::InsertAt(size_t pos, wchar_t ch)
 {
 	if (this->GapL != pos)
-		this->MoveGap(pos);
+		this->MoveGapTo(pos);
 	if (this->GapL == this->GapR)
 		this->ExtendGap();
 
 	this->InsertInText(pos, ch);
 	this->GapL++;
-	this->Point++;
+	this->MoveCursorForward();
 }
 void Gap::InsertAt(size_t pos, const wchar_t* frag)
 {
 	if (this->GapL != pos)
-		this->MoveGap(pos);
-	for (int i = 0; i < wcslen(frag); i++)
+		this->MoveGapTo(pos);
+	for (size_t i = 0; i < wcslen(frag); i++)
 	{
 		if (this->GapL == this->GapR)
 			this->ExtendGap();
 
 		this->InsertInText(pos+i, frag[i]);
 		this->GapL++;
-		this->Point++;
+		this->MoveCursorForward();
 	}
 }
 
-size_t Gap::GetPoint()
+size_t Gap::GetCursor()
 {
-	return this->Point;
+	return this->Cursor.Position;
 }
 wchar_t* Gap::GetText()
 {
 	return this->Text;
 }
 
-void Gap::MovePointForward()
+void Gap::MoveCursorUp()
 {
-	if (this->Point + 1 < wcslen(this->Text))
-	{
-		this->Point++;
-		this->MoveRight(this->Point);
-	}
-}
-void Gap::MovePointBackward()
-{
-	if (this->Point >= 1)
-	{
-		this->Point--;
-		this->MoveLeft(this->Point);
-	}
-}
+	size_t startLineLen = 0;
+	size_t upperLineLen = 0;
+	size_t startLineOffset = 0;
+	size_t upperLineOffset = 0;
 
-wchar_t* Gap::GetLine(size_t index)
-{
-	wchar_t* Line = new wchar_t[0];
-	Line[0] = L'\0';
-	size_t Index = 0;
-	for (int i = 0;i < wcslen(this->Text);i++)
+	size_t currentPos = this->Cursor.Position;
+
+	while (currentPos > 0 && this->Text[currentPos] != NEWLN_CH)
 	{
-		switch (this->Text[i])
+		currentPos--;
+		startLineLen++;
+	}
+
+	if (currentPos > 0)
+	{
+		startLineOffset = currentPos+1;
+		currentPos--;
+		while (currentPos > 0 && this->Text[currentPos] != NEWLN_CH)
 		{
-			case GAP_CH:
-				continue;
+			currentPos--;
+			upperLineLen++;
 		}
-		if (this->Text[i] == '\r')
-		{
-			if (Index == index)
-				return Line;
-			else
-			{
-				Line = new wchar_t[0];
-				Line[0] = L'\0';
-				Index++;
-			}
-		}
+		upperLineOffset = currentPos;
+		
+		if (this->Cursor.GoalOffset >= upperLineLen)
+			this->Cursor.Position = upperLineOffset + upperLineLen + 1;
 		else
-			Line = this->WCharAppend(Line,this->Text[i]);
+		{
+			this->Cursor.Position = upperLineOffset + this->Cursor.GoalOffset;
+			if (currentPos != 0)
+				this->Cursor.Position++;
+		}
+		this->MoveGapTo(this->Cursor.Position);
+	}
+}
+void Gap::MoveCursorDown()
+{
+	size_t startLineLen = 0;
+	size_t bottomLineLen = 0;
+	size_t startLineOffset = 0;
+	size_t bottomLineOffset = 0;
+
+	size_t gapChars = 0;
+	size_t len = wcslen(this->Text) - 1;
+	size_t currentPos = this->Cursor.Position;
+
+	while (currentPos > 0 && this->Text[currentPos] != NEWLN_CH)
+		currentPos--;
+	if (this->Text[currentPos] == NEWLN_CH)
+		currentPos++;
+	startLineOffset = currentPos;
+
+	while (currentPos < len && this->Text[currentPos] != NEWLN_CH)
+	{
+		if (this->Text[currentPos] != GAP_CH)
+			startLineLen++;
+		else
+			gapChars++;
+		currentPos++;
 	}
 
-	return Line;
-}
+	if (currentPos < len)
+	{
+		currentPos++;
+		bottomLineOffset = currentPos;
+		while (currentPos < len && this->Text[currentPos] != NEWLN_CH)
+		{
+			currentPos++;
+			if (this->Text[currentPos] != GAP_CH)
+				bottomLineLen++;
+		}
+		if (currentPos == len)
+			bottomLineLen++;
 
-void Gap::MoveGap(size_t pos)
+		if (this->Cursor.GoalOffset >= bottomLineLen)
+			this->Cursor.Position = bottomLineOffset + bottomLineLen - gapChars;
+		else
+			this->Cursor.Position = bottomLineOffset + this->Cursor.GoalOffset - gapChars;
+		this->MoveGapTo(this->Cursor.Position);
+	}
+}
+void Gap::MoveCursorForward()
+{
+	bool forwardIsEmpty = true;
+	for (size_t i = this->Cursor.Position; i < wcslen(this->Text);i++)
+		if (this->Text[i] != GAP_CH)
+		{
+			forwardIsEmpty = false;
+			break;
+		}
+	if (this->Cursor.Position + 1 < wcslen(this->Text))
+		if (!forwardIsEmpty)
+			this->Cursor.Position++;
+	this->GetGoalOffset();
+	this->MoveGapRight(this->Cursor.Position);
+}
+void Gap::MoveCursorBackward()
+{
+	if (this->Cursor.Position >= 1)
+		this->Cursor.Position--;
+	this->GetGoalOffset();
+	this->MoveGapLeft(this->Cursor.Position);
+}
+void Gap::MoveGapTo(size_t pos)
 {
 	if (this->GapL > pos)
-		this->MoveLeft(pos);
+		this->MoveGapLeft(pos);
 	else
-		this->MoveRight(pos);
+		this->MoveGapRight(pos);
 }
-void Gap::MoveLeft(size_t pos)
+void Gap::MoveGapLeft(size_t pos)
 {
 	while (this->GapL != pos)
 	{
@@ -139,19 +197,17 @@ void Gap::MoveLeft(size_t pos)
 		this->Text[this->GapL] = GAP_CH;
 	}
 }
-void Gap::MoveRight(size_t pos)
+void Gap::MoveGapRight(size_t pos)
 {
 	while (this->GapL != pos)
 	{
 		this->GapL++;
-		this->GapR++;
 		if (GapR < wcslen(this->Text))
 		{
+			this->GapR++;
 			this->Text[this->GapL - 1] = this->Text[this->GapR];
 			this->Text[this->GapR] = GAP_CH;
 		}
-		else
-			GapR--;
 	}
 }
 
@@ -161,16 +217,16 @@ void Gap::ExtendGap()
 	size_t forwlen = wcslen(this->Text) - pos - 1;
 	
 	wchar_t* forwtext = new wchar_t[forwlen];
-	for (int i = 0; i < forwlen; i++)
+	for (size_t i = 0; i < forwlen; i++)
 		forwtext[i] = this->Text[pos + i + 1];
 
-	for (int i = 0; i < this->GapSize; i++)
+	for (size_t i = 0; i < this->GapSize; i++)
 	{
 		this->GapR++;
 		this->InsertInText(GapR, GAP_CH);
 	}
 
-	for (int i = 0; i < forwlen; i++)
+	for (size_t i = 0; i < forwlen; i++)
 		this->InsertInText(i+GapR+1, forwtext[i]);
 }
 void Gap::ExtendText()
@@ -178,7 +234,7 @@ void Gap::ExtendText()
 	size_t len = wcslen(this->Text);
 	size_t nlen = len + 1;
 	wchar_t* exttext = new wchar_t[nlen];
-	for (int i = 0; i < len; i++)
+	for (size_t i = 0; i < len; i++)
 		exttext[i] = this->Text[i];
 	exttext[nlen] = L'\0';
 	exttext[nlen-1] = GAP_CH;
@@ -201,4 +257,15 @@ wchar_t* Gap::WCharAppend(wchar_t* wcharr, wchar_t ch)
 	newarr[len] = ch;
 	return newarr;
 }
+
+void Gap::GetGoalOffset()
+{
+	size_t offset = 0;
+	size_t currentPos = this->Cursor.Position;
+	while (currentPos > 0 && this->Text[currentPos-1] != NEWLN_CH)
+	{
+		offset++;
+		currentPos--;
+	}
+	this->Cursor.GoalOffset = offset;
 }

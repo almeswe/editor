@@ -4,7 +4,13 @@
 #include <string.h>
 #include <malloc.h>
 
+#include <vector>
+#include <string>
+
+using namespace std;
+
 #define GAP_CH L'\a'
+#define NEWLN_CH L'\n'
 
 class Gap
 {
@@ -16,30 +22,39 @@ class Gap
 		void RemoveAt(size_t pos);
 		void InsertAt(size_t pos, wchar_t ch);
 		void InsertAt(size_t pos, const wchar_t* frag);
-
-		size_t GetPoint();
+		
+		size_t GetCursor();
 		wchar_t* GetText();
 
-		void MovePointForward();
-		void MovePointBackward();
-
-		wchar_t* GetLine(size_t index);
+		void MoveCursorUp();
+		void MoveCursorDown();
+		void MoveCursorForward();
+		void MoveCursorBackward();
 
 	private:
+		struct GapCursor
+		{
+			size_t Position = 0;
+			size_t GoalOffset = 0;
+		};
+
 		wchar_t* Text;
-		
-		size_t Point;
+
 		size_t GapSize;
 		size_t GapR, GapL;
 
-		void MoveGap(size_t pos);
-		void MoveLeft(size_t pos);
-		void MoveRight(size_t pos);
+		GapCursor Cursor;
+
+		void MoveGapTo(size_t pos);
+		void MoveGapLeft(size_t pos);
+		void MoveGapRight(size_t pos);
 
 		void ExtendGap();
 		void ExtendText();
 
 		void InsertInText(size_t pos, wchar_t ch);
+
+		void GetGoalOffset();
 
 		wchar_t* WCharAppend(wchar_t* wcharr, wchar_t ch);
 };
