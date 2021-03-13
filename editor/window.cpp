@@ -21,11 +21,10 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 
         case WM_MOUSEWHEEL:
             if (GetKeyState(VK_CONTROL) < 0)
-                renderer->OnScroll(HIWORD(wParam));
+                renderer->OnCtrlScroll(HIWORD(wParam));
             break;
 
         case WM_KEYDOWN:
-            //rewrite
             if (GetKeyState(VK_CONTROL) < 0 && GetKeyState(0x56) < 0)
             {
                 gap->InsertAt(gap->GetPoint(), L"pasted");
@@ -34,23 +33,40 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             switch (wParam)
             {
                 case VK_BACK:
-                {
-                    gap->RemoveAt(gap->GetPoint());
+                    gap->RemoveAt(gap->GetCursor());
                     break;
-                }
+
+                case VK_UP:
+                    gap->MoveCursorUp();
+                    break;
+
+                case VK_DOWN:
+                    gap->MoveCursorDown();
+                    break;
+
                 case VK_LEFT:
-                    gap->MovePointBackward();
+                    gap->MoveCursorBackward();
                     break;
+
+                case VK_RETURN:
+                    gap->InsertAt(gap->GetCursor(),L"\n");
+                    break;
+
                 case VK_RIGHT:
-                    gap->MovePointForward();
+                    gap->MoveCursorForward();
                     break;
             }
             break;
 
         case WM_CHAR:
-            if (wParam == VK_BACK)
-                break;
-            gap->InsertAt(gap->GetPoint(), wParam);
+            switch (wParam)
+            {
+                case VK_BACK:
+                case VK_RETURN:
+                    break;
+                default:
+                    gap->InsertAt(gap->GetCursor(), wParam);
+            }
             break;
 
         case WM_SIZE:
@@ -62,7 +78,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             BeginPaint(window,&ps);
             renderer->SetText(gap->GetText());
             renderer->RenderText();
-            renderer->RenderCursor(gap->GetPoint());
+            renderer->RenderCursor(gap->GetCursor());
             EndPaint(window,&ps);
             return 0;
 
