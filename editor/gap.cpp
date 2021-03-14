@@ -2,9 +2,6 @@
 
 Gap::Gap()
 {
-	this->GapSize = 150;
-	this->Cursor.Position = 0;
-
 	this->GapL = 0;
 	this->GapR = 0;
 
@@ -46,9 +43,8 @@ void Gap::InsertAt(size_t pos, wchar_t ch)
 		this->MoveGapTo(pos);
 	if (this->GapL == this->GapR)
 		this->ExtendGap();
-
-	this->InsertInText(pos, ch);
 	this->GapL++;
+	this->InsertInText(pos, ch);
 	this->MoveCursorForward();
 }
 void Gap::InsertAt(size_t pos, const wchar_t* frag)
@@ -59,9 +55,8 @@ void Gap::InsertAt(size_t pos, const wchar_t* frag)
 	{
 		if (this->GapL == this->GapR)
 			this->ExtendGap();
-
-		this->InsertInText(pos+i, frag[i]);
 		this->GapL++;
+		this->InsertInText(pos+i, frag[i]);
 		this->MoveCursorForward();
 	}
 }
@@ -78,38 +73,51 @@ wchar_t* Gap::GetText()
 void Gap::MoveCursorUp()
 {
 	size_t startLineLen = 0;
-	size_t upperLineLen = 0;
+	//while-loop which calculates it, loses one increment (idk why)
+	size_t upperLineLen = 1;
 	size_t startLineOffset = 0;
 	size_t upperLineOffset = 0;
 
 	size_t currentPos = this->Cursor.Position;
 
-	while (currentPos > 0 && this->Text[currentPos] != NEWLN_CH)
+	while (currentPos > 0 && this->Text[currentPos-1] != NEWLN_CH)
 	{
-		currentPos--;
 		startLineLen++;
-	}
-
-	if (currentPos > 0)
-	{
-		startLineOffset = currentPos+1;
 		currentPos--;
+	}
+	startLineOffset = currentPos;
+
+	if (currentPos > 2)
+	{
+		//to skip offset char of 1-st string and \n after it
+		currentPos -= 2;
+
 		while (currentPos > 0 && this->Text[currentPos] != NEWLN_CH)
 		{
-			currentPos--;
 			upperLineLen++;
+			currentPos--;
 		}
 		upperLineOffset = currentPos;
-		
+
 		if (this->Cursor.GoalOffset >= upperLineLen)
-			this->Cursor.Position = upperLineOffset + upperLineLen + 1;
+			this->Cursor.Position = upperLineOffset + upperLineLen;
 		else
 		{
-			this->Cursor.Position = upperLineOffset + this->Cursor.GoalOffset;
+			//??
 			if (currentPos != 0)
-				this->Cursor.Position++;
+				upperLineOffset++;
+			this->Cursor.Position = upperLineOffset + this->Cursor.GoalOffset;
 		}
 		this->MoveGapTo(this->Cursor.Position);
+	}
+	else
+	{
+		if (currentPos > 0)
+		{
+			//if the upperline first in the text and contains only '\n' (or other control char)
+			this->Cursor.Position = currentPos - 1;
+			this->MoveGapTo(this->Cursor.Position);
+		}
 	}
 }
 void Gap::MoveCursorDown()
@@ -123,14 +131,16 @@ void Gap::MoveCursorDown()
 	size_t len = wcslen(this->Text) - 1;
 	size_t currentPos = this->Cursor.Position;
 
-	while (currentPos > 0 && this->Text[currentPos] != NEWLN_CH)
+	//first need to determine the offset of start string:
+	while (currentPos > 0 && this->Text[currentPos-1] != NEWLN_CH)
 		currentPos--;
-	if (this->Text[currentPos] == NEWLN_CH)
-		currentPos++;
 	startLineOffset = currentPos;
 
-	while (currentPos < len && this->Text[currentPos] != NEWLN_CH)
+	//and then calculate length
+	while (currentPos <= len && this->Text[currentPos] != NEWLN_CH)
 	{
+		//this construction need for counting gap-chars and remove the offset in future
+		//gap-chars will met because the currentPos always increases
 		if (this->Text[currentPos] != GAP_CH)
 			startLineLen++;
 		else
@@ -138,18 +148,17 @@ void Gap::MoveCursorDown()
 		currentPos++;
 	}
 
-	if (currentPos < len)
+	if (currentPos <= len)
 	{
 		currentPos++;
 		bottomLineOffset = currentPos;
-		while (currentPos < len && this->Text[currentPos] != NEWLN_CH)
+
+		while (currentPos <= len && this->Text[currentPos] != NEWLN_CH)
 		{
-			currentPos++;
 			if (this->Text[currentPos] != GAP_CH)
 				bottomLineLen++;
+			currentPos++;
 		}
-		if (currentPos == len)
-			bottomLineLen++;
 
 		if (this->Cursor.GoalOffset >= bottomLineLen)
 			this->Cursor.Position = bottomLineOffset + bottomLineLen - gapChars;
