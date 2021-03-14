@@ -24,6 +24,42 @@ void Renderer::RenderText()
 	this->CreateDWriteTextLayout();
 	this->RenderTextWithDirect2DContext();
 }
+void Renderer::RenderCursor(size_t pos)
+{
+	float CursorX, CursorY;
+	DWRITE_HIT_TEST_METRICS CursorMetrics;
+	DWriteTextLayout->HitTestTextPosition(
+		pos,
+		0,
+		&CursorX,
+		&CursorY,
+		&CursorMetrics
+	);
+
+	/*DWriteTextLayout->HitTestPoint(
+
+
+	);*/
+
+	switch (this->DWriteTextFormat->GetFontStyle())
+	{
+		case DWRITE_FONT_STYLE_ITALIC:
+			CursorX += this->FontSize / 20;
+			break;
+		case DWRITE_FONT_STYLE_OBLIQUE:
+			CursorX += this->FontSize / 5;
+			break;
+	}
+
+	this->Direct2DTarget->BeginDraw();
+	this->Direct2DTarget->DrawLine(
+		{ CursorX,CursorY + this->FontSize / 5 },
+		{ CursorX,CursorY + this->FontSize },
+		this->Direct2DBrush,
+		this->FontSize / 20
+	);
+	this->Direct2DTarget->EndDraw();
+}
 void Renderer::SetText(wchar_t* text)
 {
 	this->Text = text;
