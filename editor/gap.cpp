@@ -4,6 +4,7 @@ Gap::Gap()
 {
 	this->GapL = 0;
 	this->GapR = 0;
+	this->GapSize = 150;
 
 	this->Text = new wchar_t[1];
 	this->Text[0] = GAP_CH;
