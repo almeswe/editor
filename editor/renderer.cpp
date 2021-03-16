@@ -2,6 +2,9 @@
 
 Renderer::Renderer(HWND window)
 {
+	this->CurrentFirstLine = 0;
+	this->ScrollOffset = 0;
+
 	this->FontSize = 35.0f;
 	this->Window = window;
 	this->CreateResources();
@@ -23,6 +26,58 @@ void Renderer::RenderText()
 
 	this->CreateDWriteTextLayout();
 	this->RenderTextWithDirect2DContext();
+}
+
+#define ADDITION_HEIGHT 150
+void Renderer::RenderText(Gap* gap)
+{
+	GetClientRect(this->Window, &this->SurfaceRect);
+	if (!this->Direct2DTarget)
+	{
+		this->CreateDirect2DTarget();
+		this->CreateDirect2DBrush();
+	}
+	if (!this->Direct2DContext)
+		this->CreateDirect2DContext();
+
+	float targetHeight = this->Direct2DTarget->GetSize().height;
+
+	ComPtr<IDWriteTextLayout> PrTextLayout;
+	DWRITE_TEXT_RANGE DWriteRange;
+	DWriteRange.startPosition = 0;
+
+	D2D1_POINT_2F paragraphPos = Point2F(0, this->ScrollOffset);
+
+	this->Direct2DContext->BeginDraw();
+	this->Direct2DContext->SetTransform(IdentityMatrix());
+	this->Direct2DContext->Clear(ColorF(ColorF::DarkSlateGray));
+	for (int pr = 0; pr < this->Paragraphs.size(); pr++)
+	{
+		if (paragraphPos.y + this->FontSize >= 0)
+		{
+			this->DWriteFactory->CreateTextLayout(
+				this->Paragraphs[pr].Text.c_str(),
+				this->Paragraphs[pr].Length,
+				this->DWriteTextFormat,
+				0,
+				0,
+				&PrTextLayout
+			);
+			DWriteRange.length = this->Paragraphs[pr].Length;
+			PrTextLayout->SetFontSize(this->FontSize, DWriteRange);
+
+			this->Direct2DContext->DrawTextLayout(
+				paragraphPos,
+				PrTextLayout.Get(),
+				this->Direct2DBrush);
+
+		}
+		paragraphPos.y += this->FontSize;
+
+		if (paragraphPos.y > targetHeight)
+			break;
+	}
+	this->Direct2DContext->EndDraw();
 }
 void Renderer::RenderCursor(size_t pos)
 {
@@ -64,6 +119,11 @@ void Renderer::SetText(wchar_t* text)
 {
 	this->Text = text;
 }
+void Renderer::SetParagraphs(vector<Paragraph> prs)
+{
+	this->Paragraphs = prs;
+}
+
 void Renderer::CreateDirect2DBrush()
 {
 	this->Direct2DTarget->CreateSolidColorBrush(
@@ -224,6 +284,10 @@ void Renderer::OnResize(UINT width,UINT height)
 		size.height = height;
 		this->Direct2DTarget->Resize(size);
 	}
+}
+void Renderer::OnScroll(FLOAT delta)
+{
+	this->ScrollOffset += delta == 65416.0f ? -this->FontSize : this->FontSize;
 }
 void Renderer::OnCtrlScroll(FLOAT delta)
 {

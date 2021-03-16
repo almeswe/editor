@@ -9,10 +9,11 @@
 #include <vector>
 #include <string>
 
+#include "gap.h"
+
 using namespace std;
 using namespace D2D1;
 using namespace Microsoft::WRL;
-
 
 class Renderer
 {
@@ -28,6 +29,10 @@ class Renderer
 	   void RenderCursor(size_t pos);
 
 	   void SetText(wchar_t* text);
+	   void SetParagraphs(vector<Paragraph> prs);
+
+	   //TEST
+	   void RenderText(Gap* gap);
 
 	private:
 		HWND Window;
@@ -36,7 +41,10 @@ class Renderer
 
 		wchar_t* Text;
 
-		vector<wstring> Lines;
+		//TEST
+		int CurrentFirstLine;
+		FLOAT ScrollOffset;
+		vector<Paragraph> Paragraphs;
 
 		IDWriteFactory* DWriteFactory;
 		IDWriteTextFormat* DWriteTextFormat;
