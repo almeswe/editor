@@ -279,3 +279,44 @@ void Gap::GetGoalOffset()
 	}
 	this->Cursor.GoalOffset = offset;
 }
+
+vector<Paragraph> Gap::GetParagraphs()
+{
+	size_t line = 0;
+	size_t length = 0;
+	Paragraph currentPr;
+	vector<Paragraph> prs;
+	wstring currentLine = L"";
+
+	size_t textlen = wcslen(this->Text);
+
+	for (size_t i = 0; i < textlen; i++)
+	{
+		if (this->Text[i] == NEWLN_CH || i == textlen - 1)
+		{
+			//wtf
+			if (i == textlen - 1)
+			{
+				length++;
+				currentLine += this->Text[i];
+			}
+			//
+			line++;
+			currentPr.Line = line;
+
+			currentPr.Text = currentLine;
+			currentLine = L"";
+			
+			currentPr.Length = length;
+			length = 0;
+
+			prs.push_back(currentPr);
+		}
+		else
+		{
+			length++;
+			currentLine += this->Text[i]; 
+		}
+	}
+	return prs;
+}

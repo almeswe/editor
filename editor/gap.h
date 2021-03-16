@@ -12,6 +12,13 @@ using namespace std;
 #define GAP_CH L'\a'
 #define NEWLN_CH L'\n'
 
+struct Paragraph
+{
+	size_t Line;
+	wstring Text;
+	size_t Length;
+};
+
 class Gap
 {
 	public:
@@ -30,6 +37,9 @@ class Gap
 		void MoveCursorDown();
 		void MoveCursorForward();
 		void MoveCursorBackward();
+
+		//TEST
+		vector<Paragraph> GetParagraphs();
 
 	private:
 		struct GapCursor
