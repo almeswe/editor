@@ -22,6 +22,8 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
         case WM_MOUSEWHEEL:
             if (GetKeyState(VK_CONTROL) < 0)
                 renderer->OnCtrlScroll(HIWORD(wParam));
+            else
+                renderer->OnScroll(HIWORD(wParam));
             break;
 
         case WM_KEYDOWN:
@@ -76,8 +78,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
         case WM_PAINT:
             PAINTSTRUCT ps;
             BeginPaint(window,&ps);
-            renderer->SetText(gap->GetText());
-            renderer->RenderText();
+            renderer->RenderText(gap);
             renderer->RenderCursor(gap->GetCursor());
             EndPaint(window,&ps);
             return 0;
@@ -90,7 +91,6 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             return DefWindowProc(window, message, wParam, lParam);
     }
     RepaintWindow(window);
-}
 }
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
