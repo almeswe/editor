@@ -283,6 +283,7 @@ void Gap::GetGoalOffset()
 vector<Paragraph> Gap::GetParagraphs()
 {
 	size_t line = 0;
+	//1 because the wstring.size() doesn't count '\n' char
 	size_t length = 0;
 	Paragraph currentPr;
 	vector<Paragraph> prs;

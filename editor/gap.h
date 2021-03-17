@@ -4,10 +4,14 @@
 #include <string.h>
 #include <malloc.h>
 
+#include <wrl.h>
 #include <vector>
 #include <string>
 
+#include <dwrite.h>
+
 using namespace std;
+using namespace Microsoft::WRL;
 
 #define GAP_CH L'\a'
 #define NEWLN_CH L'\n'
@@ -15,8 +19,11 @@ using namespace std;
 struct Paragraph
 {
 	size_t Line;
-	wstring Text;
 	size_t Length;
+
+	wstring Text;
+
+	ComPtr<IDWriteTextLayout> Layout;
 };
 
 class Gap
@@ -29,16 +36,14 @@ class Gap
 		void RemoveAt(size_t pos);
 		void InsertAt(size_t pos, wchar_t ch);
 		void InsertAt(size_t pos, const wchar_t* frag);
-		
-		size_t GetCursor();
-		wchar_t* GetText();
 
 		void MoveCursorUp();
 		void MoveCursorDown();
 		void MoveCursorForward();
 		void MoveCursorBackward();
 
-		//TEST
+		size_t GetCursor();
+		wchar_t* GetText();
 		vector<Paragraph> GetParagraphs();
 
 	private:
