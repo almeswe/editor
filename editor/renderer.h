@@ -25,49 +25,53 @@ class Renderer
 	   void OnCtrlScroll(FLOAT delta);
 	   void OnResize(UINT width, UINT height);
 
-	   void RenderText();
+	   void RenderText(Gap* gap);
 	   void RenderCursor(size_t pos);
 
-	   void SetText(wchar_t* text);
 	   void SetParagraphs(vector<Paragraph> prs);
-
-	   //TEST
-	   void RenderText(Gap* gap);
 
 	private:
 		HWND Window;
-		FLOAT FontSize;
 		RECT SurfaceRect;
 
 		wchar_t* Text;
+		float FontSize;
+		float ScrollOffset;
 
-		//TEST
-		int CurrentFirstLine;
-		FLOAT ScrollOffset;
 		vector<Paragraph> Paragraphs;
-
-		IDWriteFactory* DWriteFactory;
-		IDWriteTextFormat* DWriteTextFormat;
-		ComPtr<IDWriteTextLayout> DWriteTextLayout;
-
+		
 		ID2D1Factory* Direct2DFactory;
+		IDWriteFactory* DWriteFactory;
 		ID2D1DeviceContext* Direct2DContext;
-		ID2D1SolidColorBrush* Direct2DBrush;
 		ID2D1HwndRenderTarget* Direct2DTarget;
+		
+		ComPtr<IDWriteTextFormat> DWriteTextFormat;
+		ComPtr<ID2D1SolidColorBrush> Direct2DBrush;
 
 		void CreateDWriteFactory();
-		void CreateDWriteTextFormat();
-		void CreateDWriteTextLayout();
-
-		void CreateDirect2DBrush();
 		void CreateDirect2DTarget();
 		void CreateDirect2DFactory();
 		void CreateDirect2DContext();
 
+		ComPtr<ID2D1SolidColorBrush> CreateDirect2DBrush(
+			ColorF color = ColorF::WhiteSmoke
+		);
+		ComPtr<IDWriteTextLayout> CreateDWriteTextLayout(
+			wstring text,
+			UINT textLen,
+			float maxWidth = 0,
+			float maxHeight = 0
+		);
+		ComPtr<IDWriteTextFormat> CreateDWriteTextFormat(
+			float fontSize,
+			wstring fontFamily = L"Consolas", 
+			DWRITE_FONT_WEIGHT  fontWeight  = DWRITE_FONT_WEIGHT_NORMAL,
+			DWRITE_FONT_STYLE   fontStyle   = DWRITE_FONT_STYLE_NORMAL,
+			DWRITE_FONT_STRETCH fontStretch = DWRITE_FONT_STRETCH_NORMAL
+		);
+
 		void RenderTextWithDirect2DContext();
-		void RenderTextWithDirect2DTarget();
 
 		void CreateResources();
 		void DiscardResources();
-
 };
