@@ -15,14 +15,25 @@ using namespace std;
 using namespace D2D1;
 using namespace Microsoft::WRL;
 
+#define ADDITIONAL_TOP_OFFSET    0
+#define ADDITIONAL_BOTTOM_OFFSET this->FontSize * ((int)this->Paragraphs.size() - 1)
+
+#define FONT_RESIZING_SCALAR 5.0f
+#define TEXT_SCROLLING_SCALAR this->FontSize
+
+#define LOWEST_FONT_SIZE 10.0f
+#define HIGHEST_FONT_SIZE 100.0f
+
+#define NORMALIZE(delta,value) delta == 65416.0f ? -value : value
+
 class Renderer
 {
 	public:
 		Renderer(HWND window);
 	   ~Renderer();
 
-	   void OnScroll(FLOAT delta);
-	   void OnCtrlScroll(FLOAT delta);
+	   void OnScroll(float delta);
+	   void OnCtrlScroll(float delta);
 	   void OnResize(UINT width, UINT height);
 
 	   void RenderText(Gap* gap);
@@ -46,7 +57,8 @@ class Renderer
 		ID2D1HwndRenderTarget* Direct2DTarget;
 		
 		ComPtr<IDWriteTextFormat> DWriteTextFormat;
-		ComPtr<ID2D1SolidColorBrush> Direct2DBrush;
+		ComPtr<ID2D1SolidColorBrush> Direct2DTextBrush;
+		ComPtr<ID2D1SolidColorBrush> Direct2DCursorBrush;
 
 		void CreateDWriteFactory();
 		void CreateDirect2DTarget();

@@ -18,18 +18,37 @@ void Renderer::OnResize(UINT width, UINT height)
 	if (this->Direct2DTarget)
 		this->Direct2DTarget->Resize({ width,height });
 }
-void Renderer::OnScroll(FLOAT delta)
+
+void Renderer::OnScroll(float delta)
 {
-	this->ScrollOffset += delta == 65416.0f ? -this->FontSize : this->FontSize;
+	this->ScrollOffset += NORMALIZE(delta, TEXT_SCROLLING_SCALAR);
+
+	if (this->ScrollOffset > ADDITIONAL_TOP_OFFSET)
+		this->ScrollOffset = ADDITIONAL_TOP_OFFSET;
+	else if (-this->ScrollOffset > ADDITIONAL_BOTTOM_OFFSET)
+		this->ScrollOffset = -ADDITIONAL_BOTTOM_OFFSET;
 }
-void Renderer::OnCtrlScroll(FLOAT delta)
+void Renderer::OnCtrlScroll(float delta)
 {
-	//normalazing
-	delta = delta == 65416.0f ? -5.0f : 5.0f;
-	if (this->FontSize + delta < 100.0f && this->FontSize + delta > 10.0f)
+	float prevFontSize = this->FontSize;
+	this->FontSize += NORMALIZE(delta, FONT_RESIZING_SCALAR);
+
+	if (this->FontSize > HIGHEST_FONT_SIZE)
+		this->FontSize = HIGHEST_FONT_SIZE;
+	else if (this->FontSize < LOWEST_FONT_SIZE)
+		this->FontSize = LOWEST_FONT_SIZE;
+	else
 	{
-		this->FontSize += delta;
-		this->ScrollOffset -= delta;
+		float offset = 0;
+		for (Paragraph pr : this->Paragraphs)
+		{
+			if (offset < this->ScrollOffset)
+			{
+				this->ScrollOffset -= ((this->FontSize-prevFontSize) * pr.Line);
+				return;
+			}
+			offset -= prevFontSize;
+		}
 	}
 }
 
@@ -39,7 +58,8 @@ void Renderer::RenderText(Gap* gap)
 	if (!this->Direct2DTarget)
 	{
 		this->CreateDirect2DTarget();
-		this->Direct2DBrush = this->CreateDirect2DBrush();
+		this->Direct2DTextBrush = this->CreateDirect2DBrush();
+		this->Direct2DCursorBrush = this->CreateDirect2DBrush(ColorF::Tomato);
 	}
 	if (!this->Direct2DContext)
 		this->CreateDirect2DContext();
@@ -67,6 +87,9 @@ void Renderer::RenderCursor(size_t pos)
 		offsetY += this->FontSize;
 	}
 
+	if (!prLayout)
+		return;
+
 	DWRITE_HIT_TEST_METRICS cursorMetrics;
 	prLayout->HitTestTextPosition(
 		pos,
@@ -76,22 +99,12 @@ void Renderer::RenderCursor(size_t pos)
 		&cursorMetrics
 	);
 
-	switch (this->DWriteTextFormat->GetFontStyle())
-	{
-		case DWRITE_FONT_STYLE_ITALIC:
-			cursorX += this->FontSize / 20;
-			break;
-		case DWRITE_FONT_STYLE_OBLIQUE:
-			cursorX += this->FontSize / 5;
-			break;
-	}
-
 	this->Direct2DTarget->BeginDraw();
 	this->Direct2DTarget->DrawLine(
-		{ cursorX,offsetY + cursorY + this->FontSize / 5 },
-		{ cursorX,offsetY + cursorY + this->FontSize },
-		this->Direct2DBrush.Get(),
-		this->FontSize / 20
+		{ cursorX,offsetY + cursorY },
+		{ cursorX,offsetY + cursorY + cursorMetrics.height },
+		this->Direct2DCursorBrush.Get(),
+		this->FontSize / 13
 	);
 	this->Direct2DTarget->EndDraw();
 }
@@ -220,7 +233,7 @@ void Renderer::RenderTextWithDirect2DContext()
 			this->Direct2DContext->DrawTextLayout(
 				{ 0,offsetY },
 				pr.Layout.Get(),
-				this->Direct2DBrush.Get());
+				this->Direct2DTextBrush.Get());
 		}
 		offsetY += this->FontSize;
 		if (offsetY > targetH)
@@ -239,6 +252,6 @@ void Renderer::CreateResources()
 void Renderer::DiscardResources()
 {
 	//rewrite
-	this->Direct2DBrush->Release();
+	this->Direct2DTextBrush->Release();
 	this->Direct2DTarget->Release();
 }
