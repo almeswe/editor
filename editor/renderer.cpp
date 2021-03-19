@@ -1,5 +1,36 @@
 #include "renderer.h"
 
+struct ContextDrawer
+{
+	HRESULT hr;
+	ID2D1DeviceContext* Direct2DContext;
+	ID2D1DrawingStateBlock* Direct2DState;
+
+	void StartDraw(ID2D1DeviceContext* context, ID2D1Factory* factory)
+	{
+		this->Direct2DContext = context;
+
+		hr = factory->CreateDrawingStateBlock(
+			&Direct2DState
+		);
+
+		if (SUCCEEDED(hr))
+			context->SaveDrawingState(Direct2DState);
+		context->BeginDraw();
+	}
+	void ClearSurface()
+	{
+		this->Direct2DContext->SetTransform(IdentityMatrix());
+		this->Direct2DContext->Clear(ColorF::ColorF(ColorF::DarkSlateBlue));
+	}
+	void EndDraw()
+	{
+		this->Direct2DContext->EndDraw();
+		if (SUCCEEDED(this->hr))
+			this->Direct2DContext->RestoreDrawingState(Direct2DState);
+	}
+};
+
 Renderer::Renderer(HWND window)
 {
 	this->ScrollOffset = 0;
@@ -18,7 +49,6 @@ void Renderer::OnResize(UINT width, UINT height)
 	if (this->Direct2DTarget)
 		this->Direct2DTarget->Resize({ width,height });
 }
-
 void Renderer::OnScroll(float delta)
 {
 	this->ScrollOffset += NORMALIZE(delta, TEXT_SCROLLING_SCALAR);
@@ -45,6 +75,8 @@ void Renderer::OnCtrlScroll(float delta)
 			if (offset < this->ScrollOffset)
 			{
 				this->ScrollOffset -= ((this->FontSize-prevFontSize) * pr.Line);
+				if (this->ScrollOffset > ADDITIONAL_TOP_OFFSET)
+					this->ScrollOffset = ADDITIONAL_TOP_OFFSET;
 				return;
 			}
 			offset -= prevFontSize;
@@ -71,24 +103,20 @@ void Renderer::RenderCursor(size_t pos)
 {
 	size_t textPos = 0;
 	float cursorX, cursorY;
-	float offsetY = this->ScrollOffset;
+	float offset = this->ScrollOffset;
 	ComPtr<IDWriteTextLayout> prLayout;
 
 	for (Paragraph pr : this->Paragraphs)
 	{
-		if (textPos + pr.Length >= pos)
+		if (textPos + pr.Length > pos)
 		{
-			pos -= textPos;
+			pos = pos < textPos ? 0 : pos - textPos;
 			prLayout = pr.Layout;
 			break;
 		}
-		else
-			textPos += pr.Length;
-		offsetY += this->FontSize;
+		textPos += pr.Length;
+		offset += this->FontSize;
 	}
-
-	if (!prLayout)
-		return;
 
 	DWRITE_HIT_TEST_METRICS cursorMetrics;
 	prLayout->HitTestTextPosition(
@@ -99,14 +127,15 @@ void Renderer::RenderCursor(size_t pos)
 		&cursorMetrics
 	);
 
-	this->Direct2DTarget->BeginDraw();
-	this->Direct2DTarget->DrawLine(
-		{ cursorX,offsetY + cursorY },
-		{ cursorX,offsetY + cursorY + cursorMetrics.height },
+	ContextDrawer drawer;
+	START_CONTEXT_DRAWING(drawer);
+	this->Direct2DContext->DrawLine(
+		{ cursorX,offset + cursorY },
+		{ cursorX,offset + cursorY + cursorMetrics.height },
 		this->Direct2DCursorBrush.Get(),
 		this->FontSize / 13
 	);
-	this->Direct2DTarget->EndDraw();
+	END_CONTEXT_DRAWING(drawer);
 }
 void Renderer::SetParagraphs(vector<Paragraph> prs)
 {
@@ -165,10 +194,11 @@ ComPtr<ID2D1SolidColorBrush> Renderer::CreateDirect2DBrush(ColorF color)
 }
 ComPtr<IDWriteTextLayout> Renderer::CreateDWriteTextLayout(wstring text, UINT textLen, float maxWidth, float maxHeight)
 {
-	DWRITE_TEXT_RANGE DWriteRange;
-	DWriteRange.startPosition = 0;
-	DWriteRange.length = textLen;
-
+	DWRITE_TEXT_RANGE DWriteRange {
+		0,
+		textLen
+	};
+	
 	ComPtr<IDWriteTextLayout> NewDWriteTextLayout;
 
 	this->DWriteFactory->CreateTextLayout(
@@ -198,11 +228,11 @@ ComPtr<IDWriteTextFormat> Renderer::CreateDWriteTextFormat(float fontSize, wstri
 			&NewDWriteTextFormat
 		);
 
-		DWRITE_TRIMMING DWriteTrimming;
-		DWriteTrimming.delimiter = 0;
-		DWriteTrimming.delimiterCount = 0;
-		DWriteTrimming.granularity = DWRITE_TRIMMING_GRANULARITY_NONE;
-
+		DWRITE_TRIMMING DWriteTrimming {
+			DWRITE_TRIMMING_GRANULARITY_NONE,
+			0,
+			0
+		};
 		NewDWriteTextFormat->SetTrimming(&DWriteTrimming, NULL);
 		NewDWriteTextFormat->SetWordWrapping(DWRITE_WORD_WRAPPING_NO_WRAP);
 		NewDWriteTextFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
@@ -216,16 +246,9 @@ void Renderer::RenderTextWithDirect2DContext()
 	float offsetY = this->ScrollOffset;
 	float targetH = this->Direct2DTarget->GetSize().height;
 
-	ID2D1DrawingStateBlock* Direct2DState;
-	HRESULT hr = this->Direct2DFactory->CreateDrawingStateBlock(
-		&Direct2DState
-	);
-
-	if (SUCCEEDED(hr))
-		this->Direct2DContext->SaveDrawingState(Direct2DState);
-	this->Direct2DContext->BeginDraw();
-	this->Direct2DContext->SetTransform(IdentityMatrix());
-	this->Direct2DContext->Clear(ColorF(ColorF::DarkSlateGray));
+	ContextDrawer drawer;
+	START_CONTEXT_DRAWING(drawer);
+	CLEAR_CONTEXT_SURFACE(drawer);
 	for (Paragraph pr : this->Paragraphs)
 	{
 		if (offsetY + this->FontSize >= 0)
@@ -239,15 +262,13 @@ void Renderer::RenderTextWithDirect2DContext()
 		if (offsetY > targetH)
 			break;
 	}
-	this->Direct2DContext->EndDraw();
-	if (SUCCEEDED(hr))
-		this->Direct2DContext->RestoreDrawingState(Direct2DState);
+	END_CONTEXT_DRAWING(drawer);
 }
 void Renderer::CreateResources()
 {
 	this->CreateDWriteFactory();
 	this->CreateDirect2DFactory();
-	this->DWriteTextFormat = this->CreateDWriteTextFormat(this->FontSize);
+	this->DWriteTextFormat = this->CreateDWriteTextFormat(this->FontSize,L"Consolas");
 }
 void Renderer::DiscardResources()
 {

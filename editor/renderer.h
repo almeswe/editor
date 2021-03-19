@@ -18,13 +18,17 @@ using namespace Microsoft::WRL;
 #define ADDITIONAL_TOP_OFFSET    0
 #define ADDITIONAL_BOTTOM_OFFSET this->FontSize * ((int)this->Paragraphs.size() - 1)
 
-#define FONT_RESIZING_SCALAR 5.0f
-#define TEXT_SCROLLING_SCALAR this->FontSize
+#define FONT_RESIZING_SCALAR 10.0f
+#define TEXT_SCROLLING_SCALAR this->FontSize*2.7f
 
 #define LOWEST_FONT_SIZE 10.0f
 #define HIGHEST_FONT_SIZE 100.0f
 
 #define NORMALIZE(delta,value) delta == 65416.0f ? -value : value
+
+#define START_CONTEXT_DRAWING(drawer) drawer.StartDraw(this->Direct2DContext,this->Direct2DFactory)
+#define CLEAR_CONTEXT_SURFACE(drawer) drawer.ClearSurface()
+#define END_CONTEXT_DRAWING(drawer)   drawer.EndDraw()
 
 class Renderer
 {
