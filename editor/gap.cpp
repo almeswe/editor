@@ -70,6 +70,47 @@ wchar_t* Gap::GetText()
 {
 	return this->Text;
 }
+vector<Paragraph> Gap::GetParagraphs()
+{
+	size_t line = 0;
+	//1 because the wstring.size() doesn't count '\n' char
+	size_t length = 1;
+	Paragraph currentPr;
+	vector<Paragraph> prs;
+	wstring currentLine = L"";
+
+	size_t textlen = wcslen(this->Text);
+
+	for (size_t i = 0; i < textlen; i++)
+	{
+		if (this->Text[i] == NEWLN_CH || i == textlen - 1)
+		{
+			//wtf
+			if (i == textlen - 1)
+			{
+				length++;
+				currentLine += this->Text[i];
+			}
+			//
+			line++;
+			currentPr.Line = line;
+
+			currentPr.Text = currentLine;
+			currentLine = L"";
+
+			currentPr.Length = length;
+			length = 1;
+
+			prs.push_back(currentPr);
+		}
+		else
+		{
+			length++;
+			currentLine += this->Text[i];
+		}
+	}
+	return prs;
+}
 
 void Gap::MoveCursorUp()
 {
@@ -98,27 +139,27 @@ void Gap::MoveCursorUp()
 			upperLineLen++;
 			currentPos--;
 		}
-		upperLineOffset = currentPos;
+upperLineOffset = currentPos;
 
-		if (this->Cursor.GoalOffset >= upperLineLen)
-			this->Cursor.Position = upperLineOffset + upperLineLen;
-		else
-		{
-			//??
-			if (currentPos != 0)
-				upperLineOffset++;
-			this->Cursor.Position = upperLineOffset + this->Cursor.GoalOffset;
-		}
-		this->MoveGapTo(this->Cursor.Position);
+if (this->Cursor.GoalOffset >= upperLineLen)
+this->Cursor.Position = upperLineOffset + upperLineLen;
+else
+{
+	//??
+	if (currentPos != 0)
+		upperLineOffset++;
+	this->Cursor.Position = upperLineOffset + this->Cursor.GoalOffset;
+}
+this->MoveGapTo(this->Cursor.Position);
 	}
 	else
 	{
-		if (currentPos > 0)
-		{
-			//if the upperline first in the text and contains only '\n' (or other control char)
-			this->Cursor.Position = currentPos - 1;
-			this->MoveGapTo(this->Cursor.Position);
-		}
+	if (currentPos > 0)
+	{
+		//if the upperline first in the text and contains only '\n' (or other control char)
+		this->Cursor.Position = currentPos - 1;
+		this->MoveGapTo(this->Cursor.Position);
+	}
 	}
 }
 void Gap::MoveCursorDown()
@@ -133,7 +174,7 @@ void Gap::MoveCursorDown()
 	size_t currentPos = this->Cursor.Position;
 
 	//first need to determine the offset of start string:
-	while (currentPos > 0 && this->Text[currentPos-1] != NEWLN_CH)
+	while (currentPos > 0 && this->Text[currentPos - 1] != NEWLN_CH)
 		currentPos--;
 	startLineOffset = currentPos;
 
@@ -171,7 +212,7 @@ void Gap::MoveCursorDown()
 void Gap::MoveCursorForward()
 {
 	bool forwardIsEmpty = true;
-	for (size_t i = this->Cursor.Position; i < wcslen(this->Text);i++)
+	for (size_t i = this->Cursor.Position; i < wcslen(this->Text); i++)
 		if (this->Text[i] != GAP_CH)
 		{
 			forwardIsEmpty = false;
@@ -278,46 +319,4 @@ void Gap::GetGoalOffset()
 		currentPos--;
 	}
 	this->Cursor.GoalOffset = offset;
-}
-
-vector<Paragraph> Gap::GetParagraphs()
-{
-	size_t line = 0;
-	//1 because the wstring.size() doesn't count '\n' char
-	size_t length = 0;
-	Paragraph currentPr;
-	vector<Paragraph> prs;
-	wstring currentLine = L"";
-
-	size_t textlen = wcslen(this->Text);
-
-	for (size_t i = 0; i < textlen; i++)
-	{
-		if (this->Text[i] == NEWLN_CH || i == textlen - 1)
-		{
-			//wtf
-			if (i == textlen - 1)
-			{
-				length++;
-				currentLine += this->Text[i];
-			}
-			//
-			line++;
-			currentPr.Line = line;
-
-			currentPr.Text = currentLine;
-			currentLine = L"";
-			
-			currentPr.Length = length;
-			length = 0;
-
-			prs.push_back(currentPr);
-		}
-		else
-		{
-			length++;
-			currentLine += this->Text[i]; 
-		}
-	}
-	return prs;
 }

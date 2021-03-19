@@ -1,13 +1,11 @@
 #pragma once
 
 #include <wchar.h>
-#include <string.h>
 #include <malloc.h>
 
 #include <wrl.h>
 #include <vector>
 #include <string>
-
 #include <dwrite.h>
 
 using namespace std;
@@ -15,6 +13,7 @@ using namespace Microsoft::WRL;
 
 #define GAP_CH L'\a'
 #define NEWLN_CH L'\n'
+#define SPACE_CH L' '
 
 struct Paragraph
 {
@@ -41,6 +40,8 @@ class Gap
 		void MoveCursorDown();
 		void MoveCursorForward();
 		void MoveCursorBackward();
+		void MoveCursorForwardWord();
+		void MoveCursorBackwardWord();
 
 		size_t GetCursor();
 		wchar_t* GetText();
