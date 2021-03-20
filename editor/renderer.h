@@ -15,20 +15,23 @@ using namespace std;
 using namespace D2D1;
 using namespace Microsoft::WRL;
 
-#define ADDITIONAL_TOP_OFFSET    0
-#define ADDITIONAL_BOTTOM_OFFSET this->FontSize * ((int)this->Paragraphs.size() - 1)
-
-#define FONT_RESIZING_SCALAR 10.0f
+#define ADDITIONAL_TOP_SCROLLING_OFFSET 0
+#define ADDITIONAL_BOTTOM_SCROLLING_OFFSET this->FontSize * ((int)this->Paragraphs.size() - 1)
 #define TEXT_SCROLLING_SCALAR this->FontSize*2.7f
 
-#define LOWEST_FONT_SIZE 10.0f
-#define HIGHEST_FONT_SIZE 100.0f
+#define FONT_SIZE_MAX 105.0f
+#define FONT_SIZE_MIN 7.0f
+#define FONT_SIZING_SCALAR 7.0f
+#define FONT_SIZE_DIFFERENCE (this->FontSize-prevFontSize)
 
 #define NORMALIZE(delta,value) delta == 65416.0f ? -value : value
 
 #define START_CONTEXT_DRAWING(drawer) drawer.StartDraw(this->Direct2DContext,this->Direct2DFactory)
 #define CLEAR_CONTEXT_SURFACE(drawer) drawer.ClearSurface()
 #define END_CONTEXT_DRAWING(drawer)   drawer.EndDraw()
+
+#define TARGET_HEIGHT this->Direct2DTarget->GetSize().height
+#define TARGET_WIDTH  this->Direct2DTarget->GetSize().width
 
 class Renderer
 {

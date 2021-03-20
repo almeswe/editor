@@ -53,34 +53,34 @@ void Renderer::OnScroll(float delta)
 {
 	this->ScrollOffset += NORMALIZE(delta, TEXT_SCROLLING_SCALAR);
 
-	if (this->ScrollOffset > ADDITIONAL_TOP_OFFSET)
-		this->ScrollOffset = ADDITIONAL_TOP_OFFSET;
-	else if (-this->ScrollOffset > ADDITIONAL_BOTTOM_OFFSET)
-		this->ScrollOffset = -ADDITIONAL_BOTTOM_OFFSET;
+	if (this->ScrollOffset > ADDITIONAL_TOP_SCROLLING_OFFSET)
+		this->ScrollOffset = ADDITIONAL_TOP_SCROLLING_OFFSET;
+	else if (-this->ScrollOffset > ADDITIONAL_BOTTOM_SCROLLING_OFFSET)
+		this->ScrollOffset = -ADDITIONAL_BOTTOM_SCROLLING_OFFSET;
 }
+
 void Renderer::OnCtrlScroll(float delta)
 {
 	float prevFontSize = this->FontSize;
-	this->FontSize += NORMALIZE(delta, FONT_RESIZING_SCALAR);
+	this->FontSize += NORMALIZE(delta, FONT_SIZING_SCALAR);
 
-	if (this->FontSize > HIGHEST_FONT_SIZE)
-		this->FontSize = HIGHEST_FONT_SIZE;
-	else if (this->FontSize < LOWEST_FONT_SIZE)
-		this->FontSize = LOWEST_FONT_SIZE;
+	if (this->FontSize > FONT_SIZE_MAX)
+		this->FontSize = FONT_SIZE_MAX;
+	else if (this->FontSize < FONT_SIZE_MIN)
+		this->FontSize = FONT_SIZE_MIN;
 	else
 	{
 		float offset = 0;
-		for (Paragraph pr : this->Paragraphs)
+		size_t offsetLine = 0;
+		while (offset > this->ScrollOffset)
 		{
-			if (offset < this->ScrollOffset)
-			{
-				this->ScrollOffset -= ((this->FontSize-prevFontSize) * pr.Line);
-				if (this->ScrollOffset > ADDITIONAL_TOP_OFFSET)
-					this->ScrollOffset = ADDITIONAL_TOP_OFFSET;
-				return;
-			}
+			offsetLine++;
 			offset -= prevFontSize;
 		}
+		this->ScrollOffset -= (FONT_SIZE_DIFFERENCE * offsetLine);
+
+		if (this->ScrollOffset > ADDITIONAL_TOP_SCROLLING_OFFSET)
+			this->ScrollOffset = ADDITIONAL_TOP_SCROLLING_OFFSET;
 	}
 }
 
@@ -243,23 +243,22 @@ ComPtr<IDWriteTextFormat> Renderer::CreateDWriteTextFormat(float fontSize, wstri
 
 void Renderer::RenderTextWithDirect2DContext()
 {
-	float offsetY = this->ScrollOffset;
-	float targetH = this->Direct2DTarget->GetSize().height;
+	float offset = this->ScrollOffset;
 
 	ContextDrawer drawer;
 	START_CONTEXT_DRAWING(drawer);
 	CLEAR_CONTEXT_SURFACE(drawer);
 	for (Paragraph pr : this->Paragraphs)
 	{
-		if (offsetY + this->FontSize >= 0)
+		if (offset + this->FontSize >= 0)
 		{
 			this->Direct2DContext->DrawTextLayout(
-				{ 0,offsetY },
+				{ 0,offset },
 				pr.Layout.Get(),
 				this->Direct2DTextBrush.Get());
 		}
-		offsetY += this->FontSize;
-		if (offsetY > targetH)
+		offset += this->FontSize;
+		if (offset > TARGET_HEIGHT)
 			break;
 	}
 	END_CONTEXT_DRAWING(drawer);
