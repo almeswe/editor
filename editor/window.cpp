@@ -26,6 +26,10 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
                 renderer->OnScroll(HIWORD(wParam));
             break;
 
+        case WM_LBUTTONDOWN:
+            renderer->OnMouseClick(LOWORD(lParam),HIWORD(lParam),gap);
+            break;
+
         case WM_KEYDOWN:
             if (GetKeyState(VK_CONTROL) < 0 && GetKeyState(0x56) < 0)
             {
@@ -35,7 +39,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             switch (wParam)
             {
                 case VK_BACK:
-                    gap->RemoveAt(gap->GetCursor());
+                    gap->RemoveAt(gap->GetCursorPosition());
                     break;
 
                 case VK_UP:
@@ -51,11 +55,14 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
                     break;
 
                 case VK_RETURN:
-                    gap->InsertAt(gap->GetCursor(),L"\n");
+                    gap->InsertAt(gap->GetCursorPosition(),L"\n");
                     break;
 
                 case VK_RIGHT:
-                    gap->MoveCursorForward();
+                    if (GetKeyState(VK_CONTROL) < 0)
+                        gap->MoveCursorForwardWord();
+                    else
+                        gap->MoveCursorForward();
                     break;
             }
             break;
@@ -67,7 +74,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
                 case VK_RETURN:
                     break;
                 default:
-                    gap->InsertAt(gap->GetCursor(), wParam);
+                    gap->InsertAt(gap->GetCursorPosition(), wParam);
             }
             break;
 
@@ -79,7 +86,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             PAINTSTRUCT ps;
             BeginPaint(window,&ps);
             renderer->RenderText(gap);
-            renderer->RenderCursor(gap->GetCursor());
+            renderer->RenderCursor(gap);
             EndPaint(window,&ps);
             return 0;
 
