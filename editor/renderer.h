@@ -15,16 +15,17 @@ using namespace std;
 using namespace D2D1;
 using namespace Microsoft::WRL;
 
+#define WHEEL_SCROLL_UP 120
+#define WHEEL_SCROLL_DOWN 65416
+
 #define ADDITIONAL_TOP_SCROLLING_OFFSET 0
 #define ADDITIONAL_BOTTOM_SCROLLING_OFFSET this->FontSize * ((int)this->Paragraphs.size() - 1)
-#define TEXT_SCROLLING_SCALAR this->FontSize*2.7f
+#define TEXT_SCROLLING_SCALAR this->FontSize*3
 
-#define FONT_SIZE_MAX 105.0f
 #define FONT_SIZE_MIN 7.0f
+#define FONT_SIZE_MAX 105.0f
 #define FONT_SIZING_SCALAR 7.0f
 #define FONT_SIZE_DIFFERENCE (this->FontSize-prevFontSize)
-
-#define NORMALIZE(delta,value) delta == 65416.0f ? -value : value
 
 #define START_CONTEXT_DRAWING(drawer) drawer.StartDraw(this->Direct2DContext,this->Direct2DFactory)
 #define CLEAR_CONTEXT_SURFACE(drawer) drawer.ClearSurface()
@@ -42,9 +43,10 @@ class Renderer
 	   void OnScroll(float delta);
 	   void OnCtrlScroll(float delta);
 	   void OnResize(UINT width, UINT height);
+	   void OnMouseClick(UINT posX,UINT posY,Gap* gap);
 
 	   void RenderText(Gap* gap);
-	   void RenderCursor(size_t pos);
+	   void RenderCursor(Gap* gap);
 
 	   void SetParagraphs(vector<Paragraph> prs);
 

@@ -51,18 +51,37 @@ void Renderer::OnResize(UINT width, UINT height)
 }
 void Renderer::OnScroll(float delta)
 {
-	this->ScrollOffset += NORMALIZE(delta, TEXT_SCROLLING_SCALAR);
+	switch ((int)delta)
+	{
+		case WHEEL_SCROLL_UP:
+			this->ScrollOffset += TEXT_SCROLLING_SCALAR;
+			break;
+		case WHEEL_SCROLL_DOWN:
+			this->ScrollOffset -= TEXT_SCROLLING_SCALAR;
+			break;
+		default:
+			return;
+	}
 
 	if (this->ScrollOffset > ADDITIONAL_TOP_SCROLLING_OFFSET)
 		this->ScrollOffset = ADDITIONAL_TOP_SCROLLING_OFFSET;
 	else if (-this->ScrollOffset > ADDITIONAL_BOTTOM_SCROLLING_OFFSET)
 		this->ScrollOffset = -ADDITIONAL_BOTTOM_SCROLLING_OFFSET;
 }
-
 void Renderer::OnCtrlScroll(float delta)
 {
 	float prevFontSize = this->FontSize;
-	this->FontSize += NORMALIZE(delta, FONT_SIZING_SCALAR);
+	switch ((int)delta)
+	{
+		case WHEEL_SCROLL_UP:
+			this->FontSize += FONT_SIZING_SCALAR;
+			break;
+		case WHEEL_SCROLL_DOWN:
+			this->FontSize -= FONT_SIZING_SCALAR;
+			break;
+		default:
+			return;
+	}
 
 	if (this->FontSize > FONT_SIZE_MAX)
 		this->FontSize = FONT_SIZE_MAX;
@@ -83,6 +102,33 @@ void Renderer::OnCtrlScroll(float delta)
 			this->ScrollOffset = ADDITIONAL_TOP_SCROLLING_OFFSET;
 	}
 }
+void Renderer::OnMouseClick(UINT posX,UINT posY, Gap* gap)
+{
+	size_t line = (size_t)((-this->ScrollOffset+posY) / this->FontSize);
+	if (line >= this->Paragraphs.size())
+	{
+		line = Paragraphs.size() - 1;
+		posY = line * this->FontSize;
+	}
+
+	BOOL isTrailing, isInside;
+	DWRITE_HIT_TEST_METRICS cursorMetrics;
+	this->Paragraphs[line].Layout->HitTestPoint(
+		posX,
+		posY+this->FontSize,
+		&isTrailing,
+		&isInside,
+		&cursorMetrics
+	);
+
+	size_t pos = 0;
+	size_t textLen = gap->GetText().size();
+	for (int i = 0; i < line; i++)
+		pos += this->Paragraphs[i].Length;
+
+	pos += cursorMetrics.textPosition;
+	gap->SetCursor(pos);
+}
 
 void Renderer::RenderText(Gap* gap)
 {
@@ -99,24 +145,14 @@ void Renderer::RenderText(Gap* gap)
 	this->SetParagraphs(gap->GetParagraphs());
 	this->RenderTextWithDirect2DContext();
 }
-void Renderer::RenderCursor(size_t pos)
+void Renderer::RenderCursor(Gap* gap)
 {
-	size_t textPos = 0;
 	float cursorX, cursorY;
-	float offset = this->ScrollOffset;
-	ComPtr<IDWriteTextLayout> prLayout;
+	size_t pos = gap->GetPositionInLine();
+	size_t line = gap->GetCursorLine() - 1;//not optimized
+	float offset = this->ScrollOffset + line * this->FontSize;
+	ComPtr<IDWriteTextLayout> prLayout = this->Paragraphs[line].Layout;
 
-	for (Paragraph pr : this->Paragraphs)
-	{
-		if (textPos + pr.Length > pos)
-		{
-			pos = pos < textPos ? 0 : pos - textPos;
-			prLayout = pr.Layout;
-			break;
-		}
-		textPos += pr.Length;
-		offset += this->FontSize;
-	}
 
 	DWRITE_HIT_TEST_METRICS cursorMetrics;
 	prLayout->HitTestTextPosition(
