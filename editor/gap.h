@@ -19,6 +19,7 @@ struct Paragraph
 {
 	size_t Line;
 	size_t Length;
+	size_t StartsAt;
 
 	wstring Text;
 
@@ -43,9 +44,14 @@ class Gap
 		void MoveCursorForwardWord();
 		void MoveCursorBackwardWord();
 
-		size_t GetCursor();
-		wchar_t* GetText();
+		wstring GetText();
+		size_t GetCursorLine();
+		size_t GetCursorPosition();
+		size_t GetPositionInLine();
 		vector<Paragraph> GetParagraphs();
+
+
+		void SetCursor(size_t pos);
 
 	private:
 		struct GapCursor
@@ -54,7 +60,7 @@ class Gap
 			size_t GoalOffset = 0;
 		};
 
-		wchar_t* Text;
+		wstring Text;
 
 		size_t GapSize;
 		size_t GapR, GapL;
@@ -66,11 +72,8 @@ class Gap
 		void MoveGapRight(size_t pos);
 
 		void ExtendGap();
-		void ExtendText();
 
 		void InsertInText(size_t pos, wchar_t ch);
 
 		void GetGoalOffset();
-
-		wchar_t* WCharAppend(wchar_t* wcharr, wchar_t ch);
 };
