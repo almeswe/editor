@@ -1,9 +1,13 @@
 ﻿#include "gap.h";
 #include "renderer.h"
+#include "clipboard.h"
+
 #include <windows.h>
 
 Gap* gap;
 Renderer* renderer;
+
+Clipboard cp;
 
 BOOL RepaintWindow(HWND window)
 {
@@ -15,6 +19,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
     switch (message)
     {
         case WM_CREATE:
+            cp.SetMainHandle(window);
             renderer = new Renderer(window);
             gap = new Gap();
             break;
@@ -33,7 +38,8 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
         case WM_KEYDOWN:
             if (GetKeyState(VK_CONTROL) < 0 && GetKeyState(0x56) < 0)
             {
-                gap->InsertAt(gap->GetPoint(), L"pasted");
+                if (SUCCEEDED(cp.ReadData()))
+                    gap->InsertAt(gap->GetCursorPosition(),cp.Text);
                 break;
             }
             switch (wParam)
