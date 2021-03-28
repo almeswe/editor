@@ -21,7 +21,7 @@ struct ContextDrawer
 	void ClearSurface()
 	{
 		this->Direct2DContext->SetTransform(IdentityMatrix());
-		this->Direct2DContext->Clear(ColorF::ColorF(ColorF::DarkSlateBlue));
+		this->Direct2DContext->Clear(ColorF::ColorF(0.12f, 0.12f, 0.12f));
 	}
 	void EndDraw()
 	{
@@ -114,19 +114,20 @@ void Renderer::OnMouseClick(UINT posX,UINT posY, Gap* gap)
 	BOOL isTrailing, isInside;
 	DWRITE_HIT_TEST_METRICS cursorMetrics;
 	this->Paragraphs[line].Layout->HitTestPoint(
-		posX,
+		posX-ADDITIONAL_LEFT_LINECOUNTER_OFFSET,
 		posY+this->FontSize,
 		&isTrailing,
 		&isInside,
 		&cursorMetrics
 	);
-
+	
 	size_t pos = 0;
 	size_t textLen = gap->GetText().size();
 	for (int i = 0; i < line; i++)
 		pos += this->Paragraphs[i].Length;
 
 	pos += cursorMetrics.textPosition;
+
 	gap->SetCursor(pos);
 }
 
@@ -136,8 +137,9 @@ void Renderer::RenderText(Gap* gap)
 	if (!this->Direct2DTarget)
 	{
 		this->CreateDirect2DTarget();
-		this->Direct2DTextBrush = this->CreateDirect2DBrush();
+		this->Direct2DTextBrush = this->CreateDirect2DBrush(ColorF(0.85f, 0.85f, 0.85f));
 		this->Direct2DCursorBrush = this->CreateDirect2DBrush(ColorF::Tomato);
+		this->Direct2DLineCounterBrush = this->CreateDirect2DBrush(ColorF(0.16f,0.65f,0.68f));
 	}
 	if (!this->Direct2DContext)
 		this->CreateDirect2DContext();
@@ -148,12 +150,11 @@ void Renderer::RenderText(Gap* gap)
 void Renderer::RenderCursor(Gap* gap)
 {
 	float cursorX, cursorY;
+	size_t line = gap->GetCursorLine();//not optimized
 	size_t pos = gap->GetPositionInLine();
-	size_t line = gap->GetCursorLine() - 1;//not optimized
 	float offset = this->ScrollOffset + line * this->FontSize;
 	ComPtr<IDWriteTextLayout> prLayout = this->Paragraphs[line].Layout;
-
-
+	
 	DWRITE_HIT_TEST_METRICS cursorMetrics;
 	prLayout->HitTestTextPosition(
 		pos,
@@ -166,8 +167,8 @@ void Renderer::RenderCursor(Gap* gap)
 	ContextDrawer drawer;
 	START_CONTEXT_DRAWING(drawer);
 	this->Direct2DContext->DrawLine(
-		{ cursorX,offset + cursorY },
-		{ cursorX,offset + cursorY + cursorMetrics.height },
+		{ cursorX + ADDITIONAL_LEFT_LINECOUNTER_OFFSET,offset + cursorY },
+		{ cursorX + ADDITIONAL_LEFT_LINECOUNTER_OFFSET,offset + cursorY + cursorMetrics.height },
 		this->Direct2DCursorBrush.Get(),
 		this->FontSize / 13
 	);
@@ -279,6 +280,7 @@ ComPtr<IDWriteTextFormat> Renderer::CreateDWriteTextFormat(float fontSize, wstri
 
 void Renderer::RenderTextWithDirect2DContext()
 {
+	wstring line;
 	float offset = this->ScrollOffset;
 
 	ContextDrawer drawer;
@@ -288,10 +290,19 @@ void Renderer::RenderTextWithDirect2DContext()
 	{
 		if (offset + this->FontSize >= 0)
 		{
+			line = to_wstring(pr.Line + 1);
 			this->Direct2DContext->DrawTextLayout(
-				{ 0,offset },
+				{ ADDITIONAL_LEFT_LINECOUNTER_OFFSET,offset },
 				pr.Layout.Get(),
 				this->Direct2DTextBrush.Get());
+
+			this->Direct2DContext->DrawTextW(
+				line.c_str(),
+				line.size(),
+				this->CreateDWriteTextFormat(this->FontSize).Get(),
+				{ 0,offset,ADDITIONAL_LEFT_LINECOUNTER_OFFSET,offset + this->FontSize },
+				this->Direct2DLineCounterBrush.Get()
+			);
 		}
 		offset += this->FontSize;
 		if (offset > TARGET_HEIGHT)
@@ -304,10 +315,4 @@ void Renderer::CreateResources()
 	this->CreateDWriteFactory();
 	this->CreateDirect2DFactory();
 	this->DWriteTextFormat = this->CreateDWriteTextFormat(this->FontSize,L"Consolas");
-}
-void Renderer::DiscardResources()
-{
-	//rewrite
-	this->Direct2DTextBrush->Release();
-	this->Direct2DTarget->Release();
 }

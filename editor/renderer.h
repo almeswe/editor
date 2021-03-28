@@ -34,6 +34,8 @@ using namespace Microsoft::WRL;
 #define TARGET_HEIGHT this->Direct2DTarget->GetSize().height
 #define TARGET_WIDTH  this->Direct2DTarget->GetSize().width
 
+#define ADDITIONAL_LEFT_LINECOUNTER_OFFSET this->FontSize * to_wstring(this->Paragraphs.size()).size()
+
 class Renderer
 {
 	public:
@@ -68,6 +70,7 @@ class Renderer
 		ComPtr<IDWriteTextFormat> DWriteTextFormat;
 		ComPtr<ID2D1SolidColorBrush> Direct2DTextBrush;
 		ComPtr<ID2D1SolidColorBrush> Direct2DCursorBrush;
+		ComPtr<ID2D1SolidColorBrush> Direct2DLineCounterBrush;
 
 		void CreateDWriteFactory();
 		void CreateDirect2DTarget();
@@ -94,5 +97,4 @@ class Renderer
 		void RenderTextWithDirect2DContext();
 
 		void CreateResources();
-		void DiscardResources();
 };
