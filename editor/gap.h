@@ -41,15 +41,12 @@ class Gap
 		void MoveCursorDown();
 		void MoveCursorForward();
 		void MoveCursorBackward();
-		void MoveCursorForwardWord();
-		void MoveCursorBackwardWord();
 
 		wstring GetText();
 		size_t GetCursorLine();
 		size_t GetCursorPosition();
 		size_t GetPositionInLine();
 		vector<Paragraph> GetParagraphs();
-
 
 		void SetCursor(size_t pos);
 
@@ -72,8 +69,8 @@ class Gap
 		void MoveGapRight(size_t pos);
 
 		void ExtendGap();
-
+		void GetGoalOffset();
 		void InsertInText(size_t pos, wchar_t ch);
 
-		void GetGoalOffset();
+		Paragraph CreateParagraph(size_t line, size_t length, wstring text, size_t startsAt);
 };

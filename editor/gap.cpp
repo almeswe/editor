@@ -6,7 +6,7 @@ Gap::Gap()
 	this->GapR = 0;
 	this->GapSize = 150;
 
-	this->Text = L" ";
+	this->Text = GAP_CH;
 }
 Gap::~Gap()
 {
@@ -72,8 +72,9 @@ size_t Gap::GetCursorLine()
 			return pr.Line;
 		textPos += pr.Length;
 	}
-	return this->GetParagraphs().size() - 1;
+	return prs.size() - 1;
 }
+size_t Gap::GetCursorPosition()
 {
 	return this->Cursor.Position;
 }
@@ -107,17 +108,17 @@ vector<Paragraph> Gap::GetParagraphs()
 				currentLine += this->Text[i];
 			}
 			//
+			prs.push_back(CreateParagraph(
+				line,
+				length,
+				currentLine,
+				startsAt - (length - 1)
+			));
 
 			line++;
-			currentPr.Line = line;
-			currentPr.Length = length;
-			currentPr.Text = currentLine;
-			currentPr.StartsAt = startsAt-(length-1);
-
+			startsAt++;
 			length = 1;
 			currentLine = L"";
-
-			prs.push_back(currentPr);
 		}
 		else
 		{
@@ -130,6 +131,15 @@ vector<Paragraph> Gap::GetParagraphs()
 		}
 	}
 	return prs;
+}
+Paragraph Gap::CreateParagraph(size_t line, size_t length, wstring text, size_t startsAt)
+{
+	Paragraph pr;
+	pr.Text = text;
+	pr.Line = line;
+	pr.Length = length;
+	pr.StartsAt = startsAt;
+	return pr;
 }
 size_t Gap::GetPositionInLine()
 {
@@ -306,7 +316,7 @@ void Gap::ExtendGap()
 	size_t pos = this->GapL;
 
 	wstring forwtext = L"";
-	size_t forwlen = this->Text.size() - pos - 1;
+	size_t  forwlen = this->Text.size() - pos - 1;
 
 	for (size_t i = 0; i < forwlen; i++)
 		forwtext.append(&this->Text[pos + i + 1]);
