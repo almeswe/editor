@@ -60,15 +60,12 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
                     gap->MoveCursorBackward();
                     break;
 
-                case VK_RETURN:
-                    gap->InsertAt(gap->GetCursorPosition(),L"\n");
+                case VK_RIGHT:
+                    gap->MoveCursorForward();
                     break;
 
-                case VK_RIGHT:
-                    if (GetKeyState(VK_CONTROL) < 0)
-                        gap->MoveCursorForwardWord();
-                    else
-                        gap->MoveCursorForward();
+                case VK_RETURN:
+                    gap->InsertAt(gap->GetCursorPosition(), L"\n");
                     break;
             }
             break;
@@ -78,6 +75,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             {
                 case VK_BACK:
                 case VK_RETURN:
+                case '\x16':
                     break;
                 default:
                     gap->InsertAt(gap->GetCursorPosition(), wParam);
